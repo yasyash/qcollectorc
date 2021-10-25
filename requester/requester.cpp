@@ -71,6 +71,46 @@ void Requester::sendRequest(const QString &apiStr,
 
 }
 
+void Requester::sendRequest(const handleFunc &funcSuccess,
+                            const handleFunc &funcError,
+                            Requester::Type type,
+                            QHttpMultiPart *data)
+{
+    QNetworkRequest request = createRequest(QByteArray("multipart/form-data; boundary=---"));
+
+    QNetworkReply *reply;
+    switch (type) {
+    case Type::POST: {
+        reply = manager->post(request, data);
+        break;
+    } case Type::GET: {
+        reply = manager->get(request);
+        break;
+    }
+    default:
+        reply = nullptr;
+        Q_ASSERT(false);
+    }
+
+    connect(reply, &QNetworkReply::finished, this,
+            [this, funcSuccess, funcError, reply]() {
+        QJsonObject obj = parseReply(reply);
+
+        if (onFinishRequest(reply)) {
+            if (funcSuccess != nullptr)
+                funcSuccess(obj);
+        } else {
+            if (funcError != nullptr) {
+                handleQtNetworkErrors(reply, obj);
+                funcError(obj);
+            }
+        }
+        reply->close();
+        reply->deleteLater();
+    } );
+
+}
+
 void Requester::sendMulishGetRequest(const QString &apiStr, //а ничего что здесь нигде не проверяется func != nullptr?
                                      const handleFunc &funcSuccess,
                                      const handleFunc &funcError,
@@ -138,6 +178,21 @@ QNetworkRequest Requester::createRequest(const QString &apiStr)
         request.setRawHeader("Authorization",QString("token %1").arg(token).toUtf8());
     if (sslConfig != nullptr)
         request.setSslConfiguration(*sslConfig);
+
+    return request;
+}
+
+QNetworkRequest Requester::createRequest(const QByteArray &_type)
+{
+    QNetworkRequest request;
+    request.setUrl(QUrl(host));
+    request.setRawHeader("Content-Type", _type);
+
+    QSslConfiguration sslConfiguration = QSslConfiguration(QSslConfiguration::defaultConfiguration());
+    sslConfiguration.setPeerVerifyMode(QSslSocket::VerifyNone);
+
+    request.setSslConfiguration(sslConfiguration);
+    //request.setRawHeader(QByteArray("Authorization"), QByteArray("Basic "));
 
     return request;
 }

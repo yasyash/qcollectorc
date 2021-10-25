@@ -37,6 +37,10 @@ public:
                      Type type = Type::GET,
                      const QVariantMap &data = QVariantMap());
 
+    void sendRequest(const handleFunc &funcSuccess,
+                     const handleFunc &funcError,
+                     Requester::Type type,
+                     QHttpMultiPart *data);
 
     void sendMulishGetRequest(const QString &apiStr,
                               const handleFunc &funcSuccess,
@@ -60,6 +64,7 @@ private:
     QByteArray variantMapToJson(QVariantMap data);
 
     QNetworkRequest createRequest(const QString &apiStr);
+    QNetworkRequest createRequest(const QByteArray &_type);
 
     QNetworkReply *sendCustomRequest(QNetworkAccessManager *manager,
                                      QNetworkRequest &request,
