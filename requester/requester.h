@@ -9,12 +9,15 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <functional>
+#include <QEventLoop>
+#include <QSqlDatabase>
 
 class Requester : public QObject
 {
     Q_OBJECT
 public:
     typedef std::function<void(const QJsonObject &)> handleFunc;
+    typedef std::function<void(const QJsonObject &, const QString &, const QDateTime &, const QDateTime &, const int &,  QSqlDatabase *, const QString &)> handleFuncExt;
     typedef std::function<void()> finishFunc;
 
     static const QString KEY_QNETWORK_REPLY_ERROR;
@@ -27,6 +30,8 @@ public:
         DELET
     };
 
+    bool syncronous_free = true;
+
     explicit Requester(QObject *parent = 0);
 
     void initRequester(const QString& host, int port, QSslConfiguration *value);
@@ -37,10 +42,16 @@ public:
                      Type type = Type::GET,
                      const QVariantMap &data = QVariantMap());
 
-    void sendRequest(const handleFunc &funcSuccess,
-                     const handleFunc &funcError,
+    void sendRequest(const handleFuncExt &funcSuccess,
+                     const handleFuncExt &funcError,
                      Requester::Type type,
-                     QHttpMultiPart *data);
+                     QHttpMultiPart *data,
+                     const QString uri,
+                     const QDateTime &_date_time,
+                    const  QDateTime &_last_time,
+                    const int &_msg_id,
+                      QSqlDatabase * m_conn,
+                    const QString &idd);
 
     void sendMulishGetRequest(const QString &apiStr,
                               const handleFunc &funcSuccess,
@@ -49,6 +60,7 @@ public:
 
     QString getToken() const;
     void setToken(const QString &value);
+    QJsonObject parseReply(QNetworkReply *reply);
 
 private:
     static const QString httpTemplate;
@@ -71,7 +83,6 @@ private:
                                      const QString &type,
                                      const QVariantMap &data);
 
-    QJsonObject parseReply(QNetworkReply *reply);
 
     bool onFinishRequest(QNetworkReply *reply);
 

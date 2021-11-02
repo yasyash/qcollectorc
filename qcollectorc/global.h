@@ -2,6 +2,9 @@
 #define GLOBAL_H
 
 #include <QHash>
+#include <QMutex>
+
+QMutex* _rest_mutex;
 
 const QHash<QString, QString> aspiap_dir = {
     {"Пыль общая", "P001"},

@@ -35,56 +35,20 @@ void Requester::sendRequest(const QString &apiStr,
         QByteArray postDataByteArray = variantMapToJson(data);
         reply = manager->post(request, postDataByteArray);
         break;
-    } case Type::GET: {
+    }
+    case Type::GET: {
         reply = manager->get(request);
         break;
-    } case Type::DELET: {
+    }
+    case Type::DELET: {
         if (data.isEmpty())
             reply = manager->deleteResource(request);
         else
             reply = sendCustomRequest(manager, request, "DELETE", data);
         break;
-    } case Type::PATCH: {
-        reply = sendCustomRequest(manager, request, "PATCH", data);
-        break;
-    } default:
-        reply = nullptr;
-        Q_ASSERT(false);
     }
-
-    connect(reply, &QNetworkReply::finished, this,
-            [this, funcSuccess, funcError, reply]() {
-        QJsonObject obj = parseReply(reply);
-
-        if (onFinishRequest(reply)) {
-            if (funcSuccess != nullptr)
-                funcSuccess(obj);
-        } else {
-            if (funcError != nullptr) {
-                handleQtNetworkErrors(reply, obj);
-                funcError(obj);
-            }
-        }
-        reply->close();
-        reply->deleteLater();
-    } );
-
-}
-
-void Requester::sendRequest(const handleFunc &funcSuccess,
-                            const handleFunc &funcError,
-                            Requester::Type type,
-                            QHttpMultiPart *data)
-{
-    QNetworkRequest request = createRequest(QByteArray("multipart/form-data; boundary=---"));
-
-    QNetworkReply *reply;
-    switch (type) {
-    case Type::POST: {
-        reply = manager->post(request, data);
-        break;
-    } case Type::GET: {
-        reply = manager->get(request);
+    case Type::PATCH: {
+        reply = sendCustomRequest(manager, request, "PATCH", data);
         break;
     }
     default:
@@ -111,7 +75,56 @@ void Requester::sendRequest(const handleFunc &funcSuccess,
 
 }
 
-void Requester::sendMulishGetRequest(const QString &apiStr, //а ничего что здесь нигде не проверяется func != nullptr?
+void Requester::sendRequest(const handleFuncExt &funcSuccess,
+                            const handleFuncExt &funcError,
+                            Requester::Type type,
+                             QHttpMultiPart *data,
+                            const QString uri,
+                            const QDateTime &_date_time,
+                           const  QDateTime &_last_time,
+                            const int &_msg_id,
+                             QSqlDatabase * m_conn,
+                            const QString &idd)
+{
+    QNetworkRequest request = createRequest(QByteArray("multipart/form-data; boundary=---"));
+    QEventLoop _event_loop;
+
+    QNetworkReply *reply;
+    switch (type) {
+    case Type::POST: {
+        reply = manager->post(request, data);
+        break;
+    } case Type::GET: {
+        reply = manager->get(request);
+        break;
+    }
+    default:
+        reply = nullptr;
+        Q_ASSERT(false);
+    }
+        connect(reply, &QNetworkReply::finished, this,
+            [this, funcSuccess, funcError, reply, &_event_loop, uri, _date_time, _last_time, _msg_id, m_conn, idd]() {
+        QJsonObject obj = parseReply(reply);
+        if (onFinishRequest(reply)) {
+            if (funcSuccess != nullptr)
+                funcSuccess(obj, uri, _date_time, _last_time, _msg_id, m_conn, idd);
+        } else {
+            if (funcError != nullptr) {
+                handleQtNetworkErrors(reply, obj);
+                funcError(obj, uri, _date_time, _last_time, _msg_id, m_conn, idd);
+            }
+        }
+
+        reply->close();
+        reply->deleteLater();
+
+        _event_loop.quit();
+    });
+
+    _event_loop.exec();
+}
+
+void Requester::sendMulishGetRequest(const QString &apiStr,
                                      const handleFunc &funcSuccess,
                                      const handleFunc &funcError,
                                      const finishFunc &funcFinish)
