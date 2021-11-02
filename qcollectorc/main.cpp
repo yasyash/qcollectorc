@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
     qint64 tz = QDateTime::currentDateTime().offsetFromUtc()/3600; //time zone
     QString o = QString("+").append((QDateTime::currentDateTime().offsetFromUtc()/3600 < 10) ? (QString("0").append(QString::number( QDateTime::currentDateTime().offsetFromUtc()/3600))) : (QString::number(QDateTime::currentDateTime().offsetFromUtc()/3600 )));
 
-    QSharedMemory _shared("77777777-3333-7777-3333-4dafd2077c46");
+    QSharedMemory _shared("77777777-7777-7777-3333-4dafd2077c46");
 
      QTextStream(stdout) << "The collector application (version 1.0) is started...\n\r";
 
